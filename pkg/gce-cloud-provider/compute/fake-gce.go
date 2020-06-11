@@ -207,7 +207,7 @@ func (cloud *FakeCloudProvider) ListSnapshots(ctx context.Context, filter string
 }
 
 // Disk Methods
-func (cloud *FakeCloudProvider) GetDisk(ctx context.Context, volKey *meta.Key) (*CloudDisk, error) {
+func (cloud *FakeCloudProvider) GetDisk(ctx context.Context, volKey *meta.Key, api GCEAPIVersion) (*CloudDisk, error) {
 	disk, ok := cloud.disks[volKey.Name]
 	if !ok {
 		return nil, notFoundError()
@@ -215,7 +215,7 @@ func (cloud *FakeCloudProvider) GetDisk(ctx context.Context, volKey *meta.Key) (
 	return disk, nil
 }
 
-func (cloud *FakeCloudProvider) ValidateExistingDisk(ctx context.Context, resp *CloudDisk, params common.DiskParameters, reqBytes, limBytes int64) error {
+func (cloud *FakeCloudProvider) ValidateExistingDisk(ctx context.Context, resp *CloudDisk, params common.DiskParameters, reqBytes, limBytes int64, multiWriter bool) error {
 	if resp == nil {
 		return fmt.Errorf("disk does not exist")
 	}
@@ -230,11 +230,12 @@ func (cloud *FakeCloudProvider) ValidateExistingDisk(ctx context.Context, resp *
 	return ValidateDiskParameters(resp, params)
 }
 
-func (cloud *FakeCloudProvider) InsertDisk(ctx context.Context, volKey *meta.Key, params common.DiskParameters, capBytes int64, capacityRange *csi.CapacityRange, replicaZones []string, snapshotID string) error {
+func (cloud *FakeCloudProvider) InsertDisk(ctx context.Context, volKey *meta.Key, params common.DiskParameters, capBytes int64, capacityRange *csi.CapacityRange, replicaZones []string, snapshotID string,  multiWriter bool) error {
 	if disk, ok := cloud.disks[volKey.Name]; ok {
 		err := cloud.ValidateExistingDisk(ctx, disk, params,
 			int64(capacityRange.GetRequiredBytes()),
-			int64(capacityRange.GetLimitBytes()))
+			int64(capacityRange.GetLimitBytes()),
+			multiWriter)
 		if err != nil {
 			return err
 		}
